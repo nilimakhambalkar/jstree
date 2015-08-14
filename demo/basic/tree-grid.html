@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>jstree basic demos</title>
+    <style>
+
+    </style>
+    <link rel="stylesheet" href="./../../dist/themes/default/style.min.css" />
+
+    <style type="text/css">
+        @import url('http://getbootstrap.com/dist/css/bootstrap.css');
+    </style>
+</head>
+
+<body>
+
+    <h1>AJAX demo</h1>
+    <div id="jstree_demo" class="demo"></div>
+
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="./../../dist/jstree.js"></script>
+    <script src="./../../dist/jstreegrid.js"></script>
+
+    <script>
+        var treeData = [{
+            "id": "E001",
+            "text": "E2E",
+            "name": "E2E",
+            "parent": "#",
+            "description": "please enter your description"
+        }, {
+            "id": "P001",
+            "text": "Process1",
+            "name": "Process1",
+            "parent": "E001",
+            "description": "please enter your description"
+        }, {
+            "id": "A001",
+            "text": "Acitvity1",
+            "name": "Acitvity1",
+            "parent": "E001",
+            "description": "please enter your description"
+        }];
+
+        var grid = [{
+            'width': 50,
+            'header': ''
+        }, {
+            'width': 30,
+            'header': 'Name',
+            'value': function(node) {
+                return (2);
+            }
+        }, {
+            'width': 30,
+            'header': 'Description',
+            'value': function(node) {
+                return (2);
+            }
+        }]
+
+        // ajax demo
+        $("#jstree_demo").jstree({
+            'core': {
+                'data': treeData,
+                "themes": {
+                    "stripes": true
+                },
+            },
+            'grid': {
+                'columns': grid
+            },
+            'plugins': ["grid", "contextmenu", "dnd", "search", "state", "types", "wholerow"]
+        });
+
+        
+        var ref = $('#jstree_demo')
+            .on('select_cell.jstree-grid', function(e, data) {
+
+            	$("#textInput").each(function(index, item){
+            		item.remove();
+            	})
+                //var ele =   (".jsgrid"+data.node.selector+"_col").toString().replace("#","_")
+                //$(data.myEvent.currentTarget).html("<input type='text'>")
+
+                ///var ref = $('#jstree_demo').jstree(true),
+                   var sel = ref.get_selected();
+             
+                    sel = sel[0];
+                    var column_number = 1;
+                    var i ;
+                    for (i = 0; i < grid.length; i++) { 
+					    if(grid[i].header == data.column){
+                    		column_number = i;
+                    		break;
+                    	}
+					}
+                   
+                     //assume second column
+                    var current_value = $("#jsgrid_" + sel + "_col" + column_number + " > span").html();
+                    console.log("#jsgrid_" + sel + "_col" + column_number + " > span");
+
+                    $("#jsgrid_" + sel + "_col" + column_number + " > span").html("<input id='txtInput' type='text' value='" + current_value + "' />");
+                    
+
+                    $("#txtInput").on('keypress',function(e) {
+                            var new_value = $(this).val();
+                            
+
+                            if(e.which == 13) {
+						        var new_value = $(this).val();
+                            	//(e.target).remove();
+                            	$("#jsgrid_" + sel + "_col" + column_number + " > span").html(new_value);
+						    }
+                       
+                    });
+                     $("#txtInput").on('blur',function(e) {
+                            var new_value = $(this).val();
+                            (e.target).remove();
+                            //$(this).parent().html(new_value);
+                            $("#jsgrid_" + sel + "_col" + column_number + " > span").html(new_value);
+                       
+                    });
+                    $("#txtInput").on('change',function(e) {
+                            var new_value = $(this).val();
+                            //$(this).parent().html(new_value);
+                       
+                    });
+
+
+
+
+				//edit(data.t, data.col,data.mtarget);
+
+            })
+            // create the instance
+            .jstree();
+
+
+          function edit(obj, col, element) {
+			if(!obj) { return false; }
+			if (element) {
+				element = $(element);
+				if (element.prop("tagName").toLowerCase() === "div") {
+					element = element.children("span:first");
+				}
+			} else {
+				// need to find the element - later
+				return false;
+			}
+			var rtl = _this._data.core.rtl,
+				w  = this.element.width(),
+				t = obj.data[col.value],
+				h1 = $("<"+"div />", { css : { "position" : "absolute", "top" : "-200px", "left" : (rtl ? "0px" : "-1000px"), "visibility" : "hidden" } }).appendTo("body"),
+				h2 = $("<"+"input />", {
+						"value" : t,
+						"class" : "jstree-rename-input",
+						"css" : {
+							"padding" : "0",
+							"border" : "1px solid silver",
+							"box-sizing" : "border-box",
+							"display" : "inline-block",
+							"height" : (this._data.core.li_height) + "px",
+							"lineHeight" : (this._data.core.li_height) + "px",
+							"width" : "150px" // will be set a bit further down
+						},
+						"blur" : $.proxy(function () {
+							var v = h2.val();
+							// save the value if changed
+							if(v === "" || v === t) { 
+								v = t; 
+							} else {
+								obj.data[col.value] = v;
+								this.element.trigger('update_cell.jstree-grid',{node:obj, col:col.value, value:v, old:t});
+								this._prepare_grid(this.get_node(obj,true));
+							}
+							h2.remove();
+							element.show();
+						}, this),
+						"keydown" : function (event) {
+							var key = event.which;
+							if(key === 27) {
+								this.value = t;
+							}
+							if(key === 27 || key === 13 || key === 37 || key === 38 || key === 39 || key === 40 || key === 32) {
+								event.stopImmediatePropagation();
+							}
+							if(key === 27 || key === 13) {
+								event.preventDefault();
+								this.blur();
+							}
+						},
+						"click" : function (e) { e.stopImmediatePropagation(); },
+						"mousedown" : function (e) { e.stopImmediatePropagation(); },
+						"keyup" : function (event) {
+							h2.width(Math.min(h1.text("pW" + this.value).width(),w));
+						},
+						"keypress" : function(event) {
+							if(event.which === 13) { return false; }
+						}
+					}),
+				fn = {
+						fontFamily		: element.css('fontFamily')		|| '',
+						fontSize		: element.css('fontSize')			|| '',
+						fontWeight		: element.css('fontWeight')		|| '',
+						fontStyle		: element.css('fontStyle')		|| '',
+						fontStretch		: element.css('fontStretch')		|| '',
+						fontVariant		: element.css('fontVariant')		|| '',
+						letterSpacing	: element.css('letterSpacing')	|| '',
+						wordSpacing		: element.css('wordSpacing')		|| ''
+				};
+			element.hide();
+			element.parent().append(h2);
+			h2.css(fn).width(Math.min(h1.text("pW" + h2[0].value).width(),w))[0].select();
+		};
+    </script>
+</body>
+
+</html>
